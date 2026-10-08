@@ -196,11 +196,14 @@ Descrição
 
 
 <label>
-Imagem
-<input
-id="courseImage"
-placeholder="assets/eletrica-predial.svg">
+  Imagem do curso
+  <input id="courseImageFile" type="file" accept="image/*">
 </label>
+
+<img
+  id="courseImagePreview"
+  style="display:none;max-width:250px;border-radius:10px;margin-top:10px"
+>
 
 
 <div class="grid-2">
