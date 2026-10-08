@@ -70,6 +70,28 @@ margin-left:8px
 .top-link{color:#fff;text-decoration:none}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:15px}
 
+.image-preview{
+display:none;
+width:220px;
+max-height:150px;
+object-fit:cover;
+border-radius:10px;
+border:1px solid #26373f;
+margin-top:5px
+}
+
+.image-current{
+display:none;
+color:#86efac;
+font-size:14px;
+margin-top:5px
+}
+
+.upload-status{
+font-size:14px;
+color:#b7c0c5
+}
+
 @media(max-width:700px){
 .admin-head{align-items:flex-start;flex-direction:column}
 .grid-2{grid-template-columns:1fr}
@@ -100,20 +122,12 @@ Entre com a conta do administrador para gerenciar os cursos.
 
 <label>
 E-mail
-<input
-id="loginEmail"
-type="email"
-autocomplete="username"
-required>
+<input id="loginEmail" type="email" autocomplete="username" required>
 </label>
 
 <label>
 Senha
-<input
-id="loginPassword"
-type="password"
-autocomplete="current-password"
-required>
+<input id="loginPassword" type="password" autocomplete="current-password" required>
 </label>
 
 <button class="admin-btn" type="submit">
@@ -127,15 +141,14 @@ ENTRAR
 </div>
 
 
-<!-- PAINEL ADMINISTRATIVO -->
+<!-- PAINEL -->
 <div id="adminView" class="hidden">
 
 <header class="admin-head">
 
 <div class="admin-title">
 
-<img src="assets/logo.png"
-alt="CEP Ensino">
+<img src="assets/logo.png" alt="CEP Ensino">
 
 <h1>Painel administrativo</h1>
 
@@ -145,15 +158,11 @@ alt="CEP Ensino">
 
 <div class="admin-actions">
 
-<a
-class="admin-btn secondary top-link"
-href="index.html">
+<a class="admin-btn secondary top-link" href="index.html">
 Ver site
 </a>
 
-<button
-id="logoutBtn"
-class="admin-btn danger">
+<button id="logoutBtn" class="admin-btn danger">
 Sair
 </button>
 
@@ -162,7 +171,7 @@ Sair
 </header>
 
 
-<!-- FORMULÁRIO DE CURSO -->
+<!-- FORMULÁRIO -->
 <section class="admin-card">
 
 <h2 id="formTitle">Novo curso</h2>
@@ -180,10 +189,7 @@ Nome
 
 <label>
 Slug
-<input
-id="courseSlug"
-placeholder="ex.: eletrica-predial"
-required>
+<input id="courseSlug" placeholder="ex.: eletrica-predial" required>
 </label>
 
 </div>
@@ -195,15 +201,32 @@ Descrição
 </label>
 
 
+<!-- UPLOAD DA IMAGEM -->
+
 <label>
-  Imagem do curso
-  <input id="courseImageFile" type="file" accept="image/*">
-</label>
+Imagem do curso
+
+<input
+id="courseImageFile"
+type="file"
+accept="image/jpeg,image/png,image/webp,image/gif">
+
+<span class="upload-status" id="uploadStatus">
+Escolha uma imagem do computador.
+</span>
 
 <img
-  id="courseImagePreview"
-  style="display:none;max-width:250px;border-radius:10px;margin-top:10px"
->
+id="courseImagePreview"
+class="image-preview"
+alt="Prévia da imagem">
+
+<span
+id="currentImageStatus"
+class="image-current">
+Imagem atual carregada.
+</span>
+
+</label>
 
 
 <div class="grid-2">
@@ -241,13 +264,8 @@ Publicado
 
 <select id="courseActive">
 
-<option value="true">
-Sim
-</option>
-
-<option value="false">
-Não
-</option>
+<option value="true">Sim</option>
+<option value="false">Não</option>
 
 </select>
 
@@ -256,14 +274,11 @@ Não
 
 <div class="admin-actions">
 
-<button
-class="admin-btn"
-type="submit">
+<button class="admin-btn" type="submit">
 SALVAR CURSO
 </button>
 
-<button
-id="cancelEdit"
+<button id="cancelEdit"
 class="admin-btn secondary"
 type="button">
 LIMPAR
@@ -278,7 +293,7 @@ LIMPAR
 </section>
 
 
-<!-- LISTA DE CURSOS -->
+<!-- CURSOS -->
 <section class="admin-card">
 
 <div style="display:flex;justify-content:space-between;gap:15px;align-items:center;flex-wrap:wrap">
@@ -295,17 +310,13 @@ Edite, publique ou desative os cursos.
 
 </div>
 
-<button
-id="refreshBtn"
-class="admin-btn secondary">
+<button id="refreshBtn" class="admin-btn secondary">
 ATUALIZAR
 </button>
 
 </div>
 
-<div
-id="coursesList"
-class="status">
+<div id="coursesList" class="status">
 Carregando...
 </div>
 
@@ -317,6 +328,7 @@ Carregando...
 
 
 <!-- SUPABASE -->
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
@@ -329,13 +341,6 @@ const SUPABASE_KEY =
 
 const { createClient } = window.supabase;
 
-/*
-  IMPORTANTE:
-  O cliente agora se chama supabaseClient.
-  Isso evita o conflito:
-  "Identifier 'supabase' has already been declared"
-*/
-
 const supabaseClient =
 createClient(
 SUPABASE_URL,
@@ -346,11 +351,14 @@ SUPABASE_KEY
 const $ = id =>
 document.getElementById(id);
 
-
 let editingId = null;
 
+let currentImageUrl = "";
 
-function status(el, msg, type = ""){
+
+/* STATUS */
+
+function status(el,msg,type=""){
 
 el.textContent = msg;
 
@@ -360,9 +368,13 @@ el.className =
 }
 
 
+/* LIMPAR FORMULÁRIO */
+
 function resetForm(){
 
 editingId = null;
+
+currentImageUrl = "";
 
 $("courseForm").reset();
 
@@ -373,6 +385,17 @@ $("courseActive").value = "true";
 $("formTitle").textContent =
 "Novo curso";
 
+$("courseImagePreview").style.display =
+"none";
+
+$("courseImagePreview").src = "";
+
+$("currentImageStatus").style.display =
+"none";
+
+$("uploadStatus").textContent =
+"Escolha uma imagem do computador.";
+
 status(
 $("formStatus"),
 ""
@@ -381,11 +404,166 @@ $("formStatus"),
 }
 
 
+/* PRÉ-VISUALIZAÇÃO */
+
+$("courseImageFile").addEventListener(
+"change",
+function(){
+
+const file = this.files[0];
+
+if(!file){
+
+return;
+
+}
+
+
+/* Verificação do tipo */
+
+if(!file.type.startsWith("image/")){
+
+this.value = "";
+
+status(
+$("formStatus"),
+"Escolha um arquivo de imagem válido.",
+"error"
+);
+
+return;
+
+}
+
+
+/* Limite de 5 MB */
+
+if(file.size > 5 * 1024 * 1024){
+
+this.value = "";
+
+status(
+$("formStatus"),
+"A imagem deve ter no máximo 5 MB.",
+"error"
+);
+
+return;
+
+}
+
+
+const reader =
+new FileReader();
+
+
+reader.onload =
+function(e){
+
+$("courseImagePreview").src =
+e.target.result;
+
+$("courseImagePreview").style.display =
+"block";
+
+$("currentImageStatus").style.display =
+"none";
+
+$("uploadStatus").textContent =
+"Imagem selecionada. Será enviada ao salvar o curso.";
+
+};
+
+
+reader.readAsDataURL(file);
+
+});
+
+
+/* UPLOAD PARA O SUPABASE STORAGE */
+
+async function uploadCourseImage(file){
+
+if(!file){
+
+return currentImageUrl || null;
+
+}
+
+
+$("uploadStatus").textContent =
+"Enviando imagem...";
+
+
+const extension =
+file.name
+.split(".")
+.pop()
+.toLowerCase();
+
+
+const fileName =
+"curso-" +
+Date.now() +
+"-" +
+Math.random()
+.toString(36)
+.substring(2,8) +
+"." +
+extension;
+
+
+const filePath =
+"cursos/" +
+fileName;
+
+
+const { error } =
+await supabaseClient
+.storage
+.from("curso-imagens")
+.upload(
+filePath,
+file,
+{
+cacheControl:"3600",
+upsert:false
+}
+);
+
+
+if(error){
+
+throw error;
+
+}
+
+
+/* URL pública */
+
+const { data } =
+supabaseClient
+.storage
+.from("curso-imagens")
+.getPublicUrl(filePath);
+
+
+$("uploadStatus").textContent =
+"Imagem enviada com sucesso.";
+
+return data.publicUrl;
+
+}
+
+
+/* PREENCHER FORMULÁRIO PARA EDIÇÃO */
+
 function fillForm(c){
 
 editingId = c.id;
 
-$("courseId").value = c.id;
+$("courseId").value =
+c.id;
 
 $("courseName").value =
 c.nome || "";
@@ -395,9 +573,6 @@ c.slug || "";
 
 $("courseDescription").value =
 c.descricao || "";
-
-$("courseImage").value =
-c.imagem || "";
 
 $("courseWorkload").value =
 c.carga_horaria || "";
@@ -414,8 +589,44 @@ c.link_compra || "";
 $("courseActive").value =
 String(c.ativo);
 
+
+currentImageUrl =
+c.imagem || "";
+
+
+/* Mostrar imagem atual */
+
+if(currentImageUrl){
+
+$("courseImagePreview").src =
+currentImageUrl;
+
+$("courseImagePreview").style.display =
+"block";
+
+$("currentImageStatus").style.display =
+"block";
+
+$("uploadStatus").textContent =
+"Imagem atual do curso. Escolha outra para substituir.";
+
+}else{
+
+$("courseImagePreview").style.display =
+"none";
+
+$("currentImageStatus").style.display =
+"none";
+
+$("uploadStatus").textContent =
+"Este curso ainda não possui imagem.";
+
+}
+
+
 $("formTitle").textContent =
 "Editar curso";
+
 
 window.scrollTo({
 top:0,
@@ -424,6 +635,8 @@ behavior:"smooth"
 
 }
 
+
+/* CARREGAR CURSOS */
 
 async function loadCourses(){
 
@@ -434,13 +647,11 @@ list.textContent =
 "Carregando...";
 
 
-const { data, error } =
+const {data,error} =
 await supabaseClient
 .from("cursos")
 .select("*")
-.order("id", {
-ascending:true
-});
+.order("id",{ascending:true});
 
 
 if(error){
@@ -507,16 +718,13 @@ ${escapeHtml(c.modalidade || "")}
 
 </div>
 
-
 <div class="admin-actions">
 
-<button
-class="admin-btn secondary edit">
+<button class="admin-btn secondary edit">
 Editar
 </button>
 
-<button
-class="admin-btn ${c.ativo ? "danger" : ""} toggle">
+<button class="admin-btn ${c.ativo ? "danger" : ""} toggle">
 
 ${c.ativo ? "Desativar" : "Publicar"}
 
@@ -544,6 +752,8 @@ list.appendChild(row);
 }
 
 
+/* SEGURANÇA */
+
 function escapeHtml(v){
 
 return String(v).replace(
@@ -560,9 +770,11 @@ ch => ({
 }
 
 
+/* PUBLICAR / DESATIVAR */
+
 async function toggleCourse(c){
 
-const { error } =
+const {error} =
 await supabaseClient
 .from("cursos")
 .update({
@@ -611,7 +823,7 @@ const password =
 $("loginPassword").value;
 
 
-const { error } =
+const {error} =
 await supabaseClient
 .auth
 .signInWithPassword({
@@ -645,8 +857,7 @@ showAdmin();
 
 /* LOGOUT */
 
-$("logoutBtn")
-.onclick =
+$("logoutBtn").onclick =
 async () => {
 
 await supabaseClient
@@ -658,17 +869,15 @@ showLogin();
 };
 
 
-/* LIMPAR FORMULÁRIO */
+/* LIMPAR */
 
-$("cancelEdit")
-.onclick =
+$("cancelEdit").onclick =
 resetForm;
 
 
 /* ATUALIZAR */
 
-$("refreshBtn")
-.onclick =
+$("refreshBtn").onclick =
 loadCourses;
 
 
@@ -681,6 +890,40 @@ async e => {
 
 e.preventDefault();
 
+
+const saveButton =
+$("courseForm")
+.querySelector('button[type="submit"]');
+
+
+saveButton.disabled =
+true;
+
+
+try{
+
+/* Upload da imagem */
+
+const imageFile =
+$("courseImageFile")
+.files[0];
+
+
+let imageUrl =
+currentImageUrl;
+
+
+if(imageFile){
+
+imageUrl =
+await uploadCourseImage(
+imageFile
+);
+
+}
+
+
+/* Dados do curso */
 
 const payload = {
 
@@ -700,9 +943,7 @@ $("courseDescription")
 .trim(),
 
 imagem:
-$("courseImage")
-.value
-.trim(),
+imageUrl || "",
 
 carga_horaria:
 $("courseWorkload")
@@ -725,14 +966,15 @@ $("courseBuy")
 .trim(),
 
 ativo:
-$("courseActive").value === "true"
+$("courseActive")
+.value === "true"
 
 };
 
 
 status(
 $("formStatus"),
-"Salvando..."
+"Salvando curso..."
 );
 
 
@@ -759,14 +1001,7 @@ await supabaseClient
 
 if(result.error){
 
-status(
-$("formStatus"),
-"Erro ao salvar: " +
-result.error.message,
-"error"
-);
-
-return;
+throw result.error;
 
 }
 
@@ -781,6 +1016,24 @@ $("formStatus"),
 resetForm();
 
 loadCourses();
+
+}catch(error){
+
+console.error(error);
+
+status(
+$("formStatus"),
+"Erro: " +
+error.message,
+"error"
+);
+
+}finally{
+
+saveButton.disabled =
+false;
+
+}
 
 });
 
