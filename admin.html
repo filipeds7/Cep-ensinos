@@ -1,0 +1,1109 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Painel Administrativo | CEP Ensino</title>
+<link rel="stylesheet" href="style.css">
+
+<style>
+.admin-page{min-height:100vh;background:#05090b;color:#fff;padding:35px 0 60px}
+.admin-wrap{max-width:1100px;margin:auto;padding:0 20px}
+.admin-head{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:30px}
+.admin-head img{width:150px}
+.admin-title h1{margin:0 0 6px}
+.admin-title p{margin:0;color:#aeb9bf}
+.admin-card{background:#0b1216;border:1px solid #1b2930;border-radius:14px;padding:24px;margin-bottom:20px}
+.login-card{max-width:440px;margin:70px auto}
+.admin-form{display:grid;gap:15px}
+.admin-form label{display:grid;gap:7px;color:#cdd5d9;font-weight:600}
+.admin-form input,
+.admin-form textarea,
+.admin-form select{
+width:100%;
+box-sizing:border-box;
+background:#05090b;
+color:#fff;
+border:1px solid #26373f;
+border-radius:8px;
+padding:12px;
+font:inherit
+}
+.admin-form textarea{min-height:110px;resize:vertical}
+.admin-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+.admin-btn{
+border:0;
+border-radius:8px;
+padding:11px 16px;
+font-weight:700;
+cursor:pointer;
+background:#16a34a;
+color:#fff
+}
+.admin-btn.secondary{background:#26343b}
+.admin-btn.danger{background:#b91c1c}
+.admin-btn:disabled{opacity:.6;cursor:not-allowed}
+.course-row{
+display:grid;
+grid-template-columns:1fr auto;
+gap:15px;
+align-items:center;
+border-bottom:1px solid #1b2930;
+padding:16px 0
+}
+.course-row:last-child{border-bottom:0}
+.course-row h3{margin:0 0 5px}
+.course-row p{margin:0;color:#9eabb1;font-size:14px}
+.badge{
+display:inline-block;
+font-size:12px;
+padding:4px 8px;
+border-radius:20px;
+background:#166534;
+margin-left:8px
+}
+.badge.off{background:#713f12}
+.hidden{display:none!important}
+.status{margin:10px 0;color:#b7c0c5}
+.status.error{color:#fca5a5}
+.status.ok{color:#86efac}
+.top-link{color:#fff;text-decoration:none}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+
+.image-preview{
+display:none;
+width:220px;
+max-height:150px;
+object-fit:cover;
+border-radius:10px;
+border:1px solid #26373f;
+margin-top:5px
+}
+
+.image-current{
+display:none;
+color:#86efac;
+font-size:14px;
+margin-top:5px
+}
+
+.upload-status{
+font-size:14px;
+color:#b7c0c5
+}
+
+@media(max-width:700px){
+.admin-head{align-items:flex-start;flex-direction:column}
+.grid-2{grid-template-columns:1fr}
+.course-row{grid-template-columns:1fr}
+.admin-actions .admin-btn{width:100%}
+}
+</style>
+</head>
+
+<body class="admin-page">
+
+<div class="admin-wrap">
+
+<!-- LOGIN -->
+<div id="loginView" class="admin-card login-card">
+
+<img src="assets/logo.png"
+alt="CEP Ensino"
+style="width:150px;margin-bottom:20px">
+
+<h1>Acesso administrativo</h1>
+
+<p style="color:#aeb9bf">
+Entre com a conta do administrador para gerenciar os cursos.
+</p>
+
+<form id="loginForm" class="admin-form">
+
+<label>
+E-mail
+<input id="loginEmail" type="email" autocomplete="username" required>
+</label>
+
+<label>
+Senha
+<input id="loginPassword" type="password" autocomplete="current-password" required>
+</label>
+
+<button class="admin-btn" type="submit">
+ENTRAR
+</button>
+
+</form>
+
+<div id="loginStatus" class="status"></div>
+
+</div>
+
+
+<!-- PAINEL -->
+<div id="adminView" class="hidden">
+
+<header class="admin-head">
+
+<div class="admin-title">
+
+<img src="assets/logo.png" alt="CEP Ensino">
+
+<h1>Painel administrativo</h1>
+
+<p>Gerencie os cursos exibidos no site.</p>
+
+</div>
+
+<div class="admin-actions">
+
+<a class="admin-btn secondary top-link" href="index.html">
+Ver site
+</a>
+
+<button id="logoutBtn" class="admin-btn danger">
+Sair
+</button>
+
+</div>
+
+</header>
+
+
+<!-- FORMULÁRIO -->
+<section class="admin-card">
+
+<h2 id="formTitle">Novo curso</h2>
+
+<form id="courseForm" class="admin-form">
+
+<input id="courseId" type="hidden">
+
+<div class="grid-2">
+
+<label>
+Nome
+<input id="courseName" required>
+</label>
+
+<label>
+Slug
+<input id="courseSlug" placeholder="ex.: eletrica-predial" required>
+</label>
+
+</div>
+
+
+<label>
+Descrição curta (aparece abaixo do nome do curso, acima da imagem)
+<textarea id="courseShortDescription" rows="2"></textarea>
+</label>
+
+
+<label>
+Descrição completa (aparece na aba "Descrição do curso")
+<textarea id="courseDescription"></textarea>
+</label>
+
+
+<!-- UPLOAD DA IMAGEM -->
+
+<label>
+Imagem do curso
+
+<input
+id="courseImageFile"
+type="file"
+accept="image/jpeg,image/png,image/webp,image/gif">
+
+<span class="upload-status" id="uploadStatus">
+Escolha uma imagem do computador.
+</span>
+
+<img
+id="courseImagePreview"
+class="image-preview"
+alt="Prévia da imagem">
+
+<span
+id="currentImageStatus"
+class="image-current">
+Imagem atual carregada.
+</span>
+
+</label>
+
+
+<div class="grid-2">
+
+<label>
+Carga horária
+<input id="courseWorkload">
+</label>
+
+<label>
+Certificado
+<input id="courseCertificate">
+</label>
+
+</div>
+
+
+<div class="grid-2">
+
+<label>
+Modalidade
+<input id="courseMode">
+</label>
+
+<label>
+Link de compra
+<input id="courseBuy">
+</label>
+
+</div>
+
+
+<label>
+Publicado
+
+<select id="courseActive">
+
+<option value="true">Sim</option>
+<option value="false">Não</option>
+
+</select>
+
+</label>
+
+
+<div class="admin-actions">
+
+<button class="admin-btn" type="submit">
+SALVAR CURSO
+</button>
+
+<button id="cancelEdit"
+class="admin-btn secondary"
+type="button">
+LIMPAR
+</button>
+
+</div>
+
+</form>
+
+<div id="formStatus" class="status"></div>
+
+</section>
+
+
+<!-- CURSOS -->
+<section class="admin-card">
+
+<div style="display:flex;justify-content:space-between;gap:15px;align-items:center;flex-wrap:wrap">
+
+<div>
+
+<h2 style="margin-bottom:5px">
+Cursos cadastrados
+</h2>
+
+<p style="color:#aeb9bf;margin-top:0">
+Edite, publique ou desative os cursos.
+</p>
+
+</div>
+
+<button id="refreshBtn" class="admin-btn secondary">
+ATUALIZAR
+</button>
+
+</div>
+
+<div id="coursesList" class="status">
+Carregando...
+</div>
+
+</section>
+
+</div>
+
+</div>
+
+
+<!-- SUPABASE -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+
+const SUPABASE_URL =
+"https://kjkmnaktjbozzuofqswm.supabase.co";
+
+const SUPABASE_KEY =
+"sb_publishable_yzMrTDwiN_RvXTipaemPRw_We2BBZ41";
+
+const { createClient } = window.supabase;
+
+const supabaseClient =
+createClient(
+SUPABASE_URL,
+SUPABASE_KEY
+);
+
+
+const $ = id =>
+document.getElementById(id);
+
+let editingId = null;
+
+let currentImageUrl = "";
+
+
+/* STATUS */
+
+function status(el,msg,type=""){
+
+el.textContent = msg;
+
+el.className =
+"status " + type;
+
+}
+
+
+/* LIMPAR FORMULÁRIO */
+
+function resetForm(){
+
+editingId = null;
+
+currentImageUrl = "";
+
+$("courseForm").reset();
+
+$("courseId").value = "";
+
+$("courseActive").value = "true";
+
+$("formTitle").textContent =
+"Novo curso";
+
+$("courseImagePreview").style.display =
+"none";
+
+$("courseImagePreview").src = "";
+
+$("currentImageStatus").style.display =
+"none";
+
+$("uploadStatus").textContent =
+"Escolha uma imagem do computador.";
+
+status(
+$("formStatus"),
+""
+);
+
+}
+
+
+/* PRÉ-VISUALIZAÇÃO */
+
+$("courseImageFile").addEventListener(
+"change",
+function(){
+
+const file = this.files[0];
+
+if(!file){
+
+return;
+
+}
+
+
+/* Verificação do tipo */
+
+if(!file.type.startsWith("image/")){
+
+this.value = "";
+
+status(
+$("formStatus"),
+"Escolha um arquivo de imagem válido.",
+"error"
+);
+
+return;
+
+}
+
+
+/* Limite de 5 MB */
+
+if(file.size > 5 * 1024 * 1024){
+
+this.value = "";
+
+status(
+$("formStatus"),
+"A imagem deve ter no máximo 5 MB.",
+"error"
+);
+
+return;
+
+}
+
+
+const reader =
+new FileReader();
+
+
+reader.onload =
+function(e){
+
+$("courseImagePreview").src =
+e.target.result;
+
+$("courseImagePreview").style.display =
+"block";
+
+$("currentImageStatus").style.display =
+"none";
+
+$("uploadStatus").textContent =
+"Imagem selecionada. Será enviada ao salvar o curso.";
+
+};
+
+
+reader.readAsDataURL(file);
+
+});
+
+
+/* UPLOAD PARA O SUPABASE STORAGE */
+
+async function uploadCourseImage(file){
+
+if(!file){
+
+return currentImageUrl || null;
+
+}
+
+
+$("uploadStatus").textContent =
+"Enviando imagem...";
+
+
+const extension =
+file.name
+.split(".")
+.pop()
+.toLowerCase();
+
+
+const fileName =
+"curso-" +
+Date.now() +
+"-" +
+Math.random()
+.toString(36)
+.substring(2,8) +
+"." +
+extension;
+
+
+const filePath =
+"cursos/" +
+fileName;
+
+
+const { error } =
+await supabaseClient
+.storage
+.from("curso-imagens")
+.upload(
+filePath,
+file,
+{
+cacheControl:"3600",
+upsert:false
+}
+);
+
+
+if(error){
+
+throw error;
+
+}
+
+
+/* URL pública */
+
+const { data } =
+supabaseClient
+.storage
+.from("curso-imagens")
+.getPublicUrl(filePath);
+
+
+$("uploadStatus").textContent =
+"Imagem enviada com sucesso.";
+
+return data.publicUrl;
+
+}
+
+
+/* PREENCHER FORMULÁRIO PARA EDIÇÃO */
+
+function fillForm(c){
+
+editingId = c.id;
+
+$("courseId").value =
+c.id;
+
+$("courseName").value =
+c.nome || "";
+
+$("courseSlug").value =
+c.slug || "";
+
+$("courseShortDescription").value =
+c.descricao_curta || "";
+
+$("courseDescription").value =
+c.descricao || "";
+
+$("courseWorkload").value =
+c.carga_horaria || "";
+
+$("courseCertificate").value =
+c.certificado || "";
+
+$("courseMode").value =
+c.modalidade || "";
+
+$("courseBuy").value =
+c.link_compra || "";
+
+$("courseActive").value =
+String(c.ativo);
+
+
+currentImageUrl =
+c.imagem || "";
+
+
+/* Mostrar imagem atual */
+
+if(currentImageUrl){
+
+$("courseImagePreview").src =
+currentImageUrl;
+
+$("courseImagePreview").style.display =
+"block";
+
+$("currentImageStatus").style.display =
+"block";
+
+$("uploadStatus").textContent =
+"Imagem atual do curso. Escolha outra para substituir.";
+
+}else{
+
+$("courseImagePreview").style.display =
+"none";
+
+$("currentImageStatus").style.display =
+"none";
+
+$("uploadStatus").textContent =
+"Este curso ainda não possui imagem.";
+
+}
+
+
+$("formTitle").textContent =
+"Editar curso";
+
+
+window.scrollTo({
+top:0,
+behavior:"smooth"
+});
+
+}
+
+
+/* CARREGAR CURSOS */
+
+async function loadCourses(){
+
+const list =
+$("coursesList");
+
+list.textContent =
+"Carregando...";
+
+
+const {data,error} =
+await supabaseClient
+.from("cursos")
+.select("*")
+.order("id",{ascending:true});
+
+
+if(error){
+
+status(
+list,
+"Erro ao carregar cursos: " +
+error.message,
+"error"
+);
+
+return;
+
+}
+
+
+if(!data.length){
+
+list.textContent =
+"Nenhum curso cadastrado.";
+
+return;
+
+}
+
+
+list.innerHTML = "";
+
+
+data.forEach(c => {
+
+const row =
+document.createElement("div");
+
+row.className =
+"course-row";
+
+
+row.innerHTML = `
+
+<div>
+
+<h3>
+
+${escapeHtml(c.nome || "Sem nome")}
+
+<span class="badge ${c.ativo ? "" : "off"}">
+
+${c.ativo ? "Publicado" : "Desativado"}
+
+</span>
+
+</h3>
+
+<p>
+
+${escapeHtml(c.slug || "")}
+
+·
+
+${escapeHtml(c.modalidade || "")}
+
+</p>
+
+</div>
+
+<div class="admin-actions">
+
+<button class="admin-btn secondary edit">
+Editar
+</button>
+
+<button class="admin-btn ${c.ativo ? "danger" : ""} toggle">
+
+${c.ativo ? "Desativar" : "Publicar"}
+
+</button>
+
+</div>
+
+`;
+
+
+row.querySelector(".edit")
+.onclick = () =>
+fillForm(c);
+
+
+row.querySelector(".toggle")
+.onclick = () =>
+toggleCourse(c);
+
+
+list.appendChild(row);
+
+});
+
+}
+
+
+/* SEGURANÇA */
+
+function escapeHtml(v){
+
+return String(v).replace(
+/[&<>'"]/g,
+ch => ({
+"&":"&amp;",
+"<":"&lt;",
+">":"&gt;",
+"'":"&#39;",
+'"':"&quot;"
+}[ch])
+);
+
+}
+
+
+/* PUBLICAR / DESATIVAR */
+
+async function toggleCourse(c){
+
+const {error} =
+await supabaseClient
+.from("cursos")
+.update({
+ativo:!c.ativo
+})
+.eq("id",c.id);
+
+
+if(error){
+
+alert(
+"Erro: " +
+error.message
+);
+
+return;
+
+}
+
+
+loadCourses();
+
+}
+
+
+/* LOGIN */
+
+$("loginForm")
+.addEventListener(
+"submit",
+async e => {
+
+e.preventDefault();
+
+
+status(
+$("loginStatus"),
+"Entrando..."
+);
+
+
+const email =
+$("loginEmail").value.trim();
+
+const password =
+$("loginPassword").value;
+
+
+const {error} =
+await supabaseClient
+.auth
+.signInWithPassword({
+
+email:email,
+
+password:password
+
+});
+
+
+if(error){
+
+status(
+$("loginStatus"),
+"Não foi possível entrar: " +
+error.message,
+"error"
+);
+
+return;
+
+}
+
+
+showAdmin();
+
+}
+);
+
+
+/* LOGOUT */
+
+$("logoutBtn").onclick =
+async () => {
+
+await supabaseClient
+.auth
+.signOut();
+
+showLogin();
+
+};
+
+
+/* LIMPAR */
+
+$("cancelEdit").onclick =
+resetForm;
+
+
+/* ATUALIZAR */
+
+$("refreshBtn").onclick =
+loadCourses;
+
+
+/* SALVAR CURSO */
+
+$("courseForm")
+.addEventListener(
+"submit",
+async e => {
+
+e.preventDefault();
+
+
+const saveButton =
+$("courseForm")
+.querySelector('button[type="submit"]');
+
+
+saveButton.disabled =
+true;
+
+
+try{
+
+/* Upload da imagem */
+
+const imageFile =
+$("courseImageFile")
+.files[0];
+
+
+let imageUrl =
+currentImageUrl;
+
+
+if(imageFile){
+
+imageUrl =
+await uploadCourseImage(
+imageFile
+);
+
+}
+
+
+/* Dados do curso */
+
+const payload = {
+
+slug:
+$("courseSlug")
+.value
+.trim(),
+
+nome:
+$("courseName")
+.value
+.trim(),
+
+descricao_curta:
+$("courseShortDescription")
+.value
+.trim(),
+
+descricao:
+$("courseDescription")
+.value
+.trim(),
+
+imagem:
+imageUrl || "",
+
+carga_horaria:
+$("courseWorkload")
+.value
+.trim(),
+
+certificado:
+$("courseCertificate")
+.value
+.trim(),
+
+modalidade:
+$("courseMode")
+.value
+.trim(),
+
+link_compra:
+$("courseBuy")
+.value
+.trim(),
+
+ativo:
+$("courseActive")
+.value === "true"
+
+};
+
+
+status(
+$("formStatus"),
+"Salvando curso..."
+);
+
+
+let result;
+
+
+if(editingId){
+
+result =
+await supabaseClient
+.from("cursos")
+.update(payload)
+.eq("id",editingId);
+
+}else{
+
+result =
+await supabaseClient
+.from("cursos")
+.insert(payload);
+
+}
+
+
+if(result.error){
+
+throw result.error;
+
+}
+
+
+status(
+$("formStatus"),
+"Curso salvo com sucesso!",
+"ok"
+);
+
+
+resetForm();
+
+loadCourses();
+
+}catch(error){
+
+console.error(error);
+
+status(
+$("formStatus"),
+"Erro: " +
+error.message,
+"error"
+);
+
+}finally{
+
+saveButton.disabled =
+false;
+
+}
+
+});
+
+
+/* MOSTRAR PAINEL */
+
+function showAdmin(){
+
+$("loginView")
+.classList
+.add("hidden");
+
+$("adminView")
+.classList
+.remove("hidden");
+
+loadCourses();
+
+}
+
+
+/* MOSTRAR LOGIN */
+
+function showLogin(){
+
+$("adminView")
+.classList
+.add("hidden");
+
+$("loginView")
+.classList
+.remove("hidden");
+
+}
+
+
+/* VERIFICAR SESSÃO */
+
+supabaseClient
+.auth
+.getSession()
+.then(({data}) => {
+
+if(data.session){
+
+showAdmin();
+
+}else{
+
+showLogin();
+
+}
+
+});
+
+</script>
+
+</body>
+</html>
